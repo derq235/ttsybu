@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text to Speech Conversion</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-top: 20px;
+        }
+
+        .container {
+            width: 80%;
+            max-width: 600px;
+            margin: 30px auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        label {
+            font-weight: bold;
+            color: #333;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            width: 100%;
+            margin-top: 15px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .loading-message {
+            text-align: center;
+            font-size: 18px;
+            color: #555;
+            display: none;
+        }
+
+        #audio-section {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        #audio-section h2 {
+            font-size: 24px;
+            color: #4CAF50;
+        }
+
+        #download-link {
+            color: #4CAF50;
+            text-decoration: none;
+            font-size: 18px;
+            margin-top: 10px;
+            display: inline-block;
+        }
+
+        #download-link:hover {
+            text-decoration: underline;
+        }
+
+        audio {
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        #countdown {
+            font-weight: bold;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>Text to Speech Conversion</h1>
+    <div class="container">
+        <form id="tts-form" action="/convert" method="post">
+            <label for="text">Enter your text:</label><br>
+            <textarea id="text" name="text" rows="5" cols="40" placeholder="Type your text here..."></textarea><br><br>
+
+            <label for="voice_name">Select a voice:</label><br>
+            <select id="voice_name" name="voice_name">
+                <option value="en-US-AriaNeural">Aria (US English)</option>
+                <option value="en-US-GuyNeural">Guy (US English)</option>
+                <option value="en-US-JennyNeural">Jenny (US English)</option>
+                <option value="en-US-SteffanNeural">Steffan (US English)</option>
+                <option value="en-US-MichelleNeural">Michelle (US English)</option>
+            </select><br><br>
+
+            <button type="submit">Convert to Audio</button>
+        </form>
+
+        <!-- Loading message -->
+        <div id="loading-message" class="loading-message">
+            <p id="loading-text">Please wait while we generate the audio...</p>
+            <p id="countdown">10 seconds remaining</p>
+        </div>
+
+        <!-- Section to display the download link and audio player -->
+        <div id="audio-section">
+            <h2>Your audio is ready!</h2>
+            <a id="download-link" href="#" download>Download Audio</a><br><br>
+            <audio id="audio-player" controls>
+                <source id="audio-source" src="" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
+        </div>
+    </div>
+
+    <script>
+        // JavaScript to handle form submission and countdown
+        document.getElementById('tts-form').onsubmit = function(event) {
+            event.preventDefault();
+
+            // Show the loading message
+            document.getElementById('loading-message').style.display = 'block';
+
+            // Hide the audio section
+            document.getElementById('audio-section').style.display = 'none';
+
+            // Set up the countdown
+            let countdownTime = 10; // Set the time for countdown (in seconds)
+            const countdownElement = document.getElementById('countdown');
+
+            const interval = setInterval(() => {
+                countdownTime--;
+                if (countdownTime > 0) {
+                    countdownElement.textContent = `${countdownTime} seconds remaining`;
+                } else {
+                    countdownElement.textContent = `Processing...`;
+                    clearInterval(interval);
+                }
+            }, 1000);
+
+            // Make a POST request to the server with the form data
+            const formData = new FormData(event.target);
+
+            fetch('/convert', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide the loading message once audio is generated
+                document.getElementById('loading-message').style.display = 'none';
+
+                if (data.audioUrl) {
+                    // Show the audio section
+                    document.getElementById('audio-section').style.display = 'block';
+
+                    // Set the download link and audio source
+                    document.getElementById('download-link').href = data.audioUrl;
+                    document.getElementById('audio-source').src = data.audioUrl;
+
+                    // Load the audio in the player
+                    document.getElementById('audio-player').load();
+                } else if (data.error) {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                // Hide the loading message in case of error
+                document.getElementById('loading-message').style.display = 'none';
+                console.error('Error:', error);
+            });
+        };
+    </script>
+</body>
+</html>
